@@ -2,6 +2,48 @@ var test_array = [];
 var colors = [];
 var labels = [];
 var delay = 200;
+var todo; //1 bubble, 2 heap, 3 quick, 4 merge
+
+document.getElementById("sort").addEventListener("click", execute_sort);
+document.getElementById("Heap").addEventListener("click", function(){todo = 2;});
+document.getElementById("Bubble").addEventListener("click", function(){todo = 1;});
+document.getElementById("Quick").addEventListener("click", function(){todo = 3;});
+document.getElementById("Merge").addEventListener("click", function(){todo = 4;});
+
+function disable_buttons(){
+  document.getElementById("Heap").disabled = true;
+  document.getElementById("Merge").disabled = true;
+  document.getElementById("Quick").disabled = true;
+  document.getElementById("Bubble").disabled = true;
+  document.getElementById("sort").disabled = true;
+  document.getElementById("new").disabled = true;
+}
+
+function reset_buttons(){
+  document.getElementById("Heap").disabled = false;
+  document.getElementById("Merge").disabled = false;
+  document.getElementById("Quick").disabled = false;
+  document.getElementById("Bubble").disabled = false;
+  document.getElementById("sort").disabled = false;
+  document.getElementById("new").disabled = false;
+}
+
+async function execute_sort(){
+  disable_buttons();
+  if (todo == 1){
+    await bubble_sort();
+  }
+  else if (todo == 2){
+    await heapSort(test_array);
+  }
+  else if (todo == 3){
+    await quickSort(test_array, 0, test_array.length-1);
+  }
+  else if (todo == 4){
+    await mergeSort(test_array, 0, test_array.length-1, 1);
+  }
+  reset_buttons();
+}
 
 var canvas = document.getElementById('myChart');
 var ctx = canvas.getContext('2d');
@@ -101,37 +143,47 @@ async function swap(items, leftIndex, rightIndex){
 
 async function bubble_sort (){
 	for (var i = 0; i < test_array.length+1; i++){
-        for (var j = 0; j < test_array.length-i-1; j++){
-            colors[j] = 'green';
-            colors[j+1] = 'green';
-            chart_to_sort.update();
-            await sleep (delay);
-            await swap(test_array, j , j+1);
-            colors[j] = 'blue';
-            colors[j+1] = 'blue';
-            update_visualizer(chart_to_sort, test_array, colors);
-        }
-        colors[test_array.length-i] = 'purple';
-        chart_to_sort.update();
+    for (var j = 0; j < test_array.length-i-1; j++){
+      colors[j] = 'green';
+      colors[j+1] = 'green';
+      chart_to_sort.update();
+      await sleep (delay);
+      await swap(test_array, j , j+1);
+      colors[j] = 'blue';
+      colors[j+1] = 'blue';
+      update_visualizer(chart_to_sort, test_array, colors);
     }
+    colors[test_array.length-i] = 'purple';
+    chart_to_sort.update();
+  }
 }
 
 async function partition(arr, low, high) {
+  colors[high] = 'yellow';
+  chart_to_sort.update();
   var i = low-1; // index of smaller element
   var pivot = arr[high];  // pivot
 
   for (var j = low; j < high; j++){
       // If current element is smaller than the pivot 
-      colors[j] = 'purple';
+      colors[j] = 'cyan';
       update_visualizer(chart_to_sort, test_array, colors);
-      await sleep (delay);
       if (arr[j] < pivot){
           // increment index of smaller element 
           i = i+1; 
+          colors[i] = 'red';
+          colors[j] = 'pink';
+          chart_to_sort.update();
+          await sleep (delay);
           var temp = arr[i];
           arr[i] = arr[j];
           arr[j] = temp;
+          colors[i] = 'blue';
+          colors[j] = 'blue';
+          chart_to_sort.update();
+          await sleep (delay);
       } 
+      await sleep (delay);
       colors[j] = 'blue';
       update_visualizer(chart_to_sort, test_array, colors);
   }
@@ -143,31 +195,24 @@ async function partition(arr, low, high) {
   arr[i+1] = arr[high];
   arr[high] = temp2; 
   await sleep (delay);
-  colors[i+1] = 'blue';
   colors[high] = 'blue';
+  colors[i+1] = 'purple';
   update_visualizer(chart_to_sort, test_array, colors);
   return (i+1);
 }
 
 async function quickSort(arr, low, high) {
-  if (low < high){ 
+  if (low <= high){ 
     // pi is partitioning index, arr[p] is now 
     // at right place 
     var pi = await partition(arr,low,high);
-
+    colors[pi] = 'purple';
+    chart_to_sort.update();
     // Separately sort elements before 
     // partition and after partition 
     await quickSort(arr, low, pi-1); 
     await quickSort(arr, pi+1, high); 
   }
-}
-
-async function doquicksort(){
-	await quickSort(test_array, 0, test_array.length-1);
-}
-
-async function domergesort(){
-  await mergeSort(test_array, 0, test_array.length-1, 1);
 }
 
 function array_move(arr, old_index, new_index) {
@@ -278,24 +323,24 @@ async function heapify(arr, n, i){
 
     if (r < n && arr[largest] < arr[r]) 
         largest = r; 
-  	
+
     if (largest != i){ 
-    	colors[i] = 'yellow';
-        colors[largest] = 'yellow';
+    	  colors[i] = 'red';
+        colors[largest] = 'red';
         update_visualizer(chart_to_sort, arr, colors);
-    	await sleep (delay);
-    	var temp = arr[i];
+      	await sleep (delay);
+    	  var temp = arr[i];
         arr[i] = arr[largest]; 
         arr[largest] = temp;
-        chart.update();
-        await sleep(delay);
+        chart_to_sort.update();
+        await sleep(delay); 
         colors[i] = 'blue';
         colors[largest] = 'blue';
         update_visualizer(chart_to_sort, arr, colors);
         await heapify(arr, n, largest); 
     }
     update_visualizer(chart_to_sort, arr, colors);
- }
+}
 
 async function heapSort(arr){ 
     var n = arr.length;
@@ -305,15 +350,12 @@ async function heapSort(arr){
         await heapify(arr, n, i); 
   
     // One by one extract elements 
-    for (let i=n-1; i> 0; i--){ 
+    for (let i=n-1; i>= 0; i--){ 
     		var temp = arr[i];
         arr[i] = arr[0];
         arr[0] = temp;
-        await heapify(arr, i, 0) 
+        await heapify(arr, i, 0); 
+        colors[i] = 'purple';
+        chart_to_sort.update();
     }
-}
-
-async function doheap(){
-	await heapSort(test_array);
-	console.log(test_array);
 }
